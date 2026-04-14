@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Move Timer</title>
+  <meta name="description" content="Bel sağlığı için hareket hatırlatıcı"/>
+  <meta name="theme-color" content="#EA580C"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Move Timer"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="apple-touch-icon" href="icons/icon-192.png"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --orange: #EA580C;
+      --orange-light: #FED7AA;
+      --orange-dark: #9A3412;
+      --orange-bg: #FFF7ED;
+      --green: #16A34A;
+      --green-bg: #F0FDF4;
+      --green-light: #BBF7D0;
+      --text: #1C1917;
+      --text-muted: #78716C;
+      --surface: #FFFFFF;
+      --surface-2: #F5F5F4;
+      --border: rgba(0,0,0,0.1);
+      --radius: 16px;
+      --radius-sm: 10px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --orange-bg: #1C0F08;
+        --green-bg: #071A0E;
+        --text: #FAFAF9;
+        --text-muted: #A8A29E;
+        --surface: #1C1917;
+        --surface-2: #292524;
+        --border: rgba(255,255,255,0.08);
+      }
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--surface-2);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    .app {
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      max-width: 420px;
+      margin: 0 auto;
+      padding: 0 0 2rem;
+    }
+
+    header {
+      padding: 3rem 1.5rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .app-name {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--orange);
+      letter-spacing: -0.5px;
+    }
+
+    .streak {
+      font-size: 13px;
+      color: var(--text-muted);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 12px;
+    }
+
+    .streak span {
+      color: var(--orange);
+      font-weight: 600;
+    }
+
+    .timer-section {
+      padding: 1rem 1.5rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .ring-wrap {
+      position: relative;
+      width: 220px;
+      height: 220px;
+      margin-bottom: 1.5rem;
+    }
+
+    .ring-wrap svg {
+      position: absolute;
+      top: 0; left: 0;
+      transform: rotate(-90deg);
+    }
+
+    .ring-inner {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .timer-num {
+      font-size: 52px;
+      font-weight: 700;
+      letter-spacing: -2px;
+      line-height: 1;
+      color: var(--text);
+    }
+
+    .timer-mode {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .mode-badge {
+      font-size: 13px;
+      font-weight: 600;
+      padding: 5px 16px;
+      border-radius: 20px;
+      margin-bottom: 1.5rem;
+      letter-spacing: 0.02em;
+    }
+
+    .mode-badge.work {
+      background: var(--surface);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+
+    .mode-badge.move {
+      background: var(--green-bg);
+      color: var(--green);
+      border: 1px solid var(--green-light);
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn {
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 15px;
+      font-weight: 600;
+      padding: 14px 28px;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.1s;
+    }
+
+    .btn:active { transform: scale(0.97); }
+
+    .btn-primary {
+      background: var(--orange);
+      color: #fff;
+      flex: 1;
+    }
+
+    .btn-primary:hover { opacity: 0.9; }
+
+    .btn-secondary {
+      background: var(--surface);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+
+    .section {
+      margin: 0 1.5rem 1.25rem;
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .section-header {
+      padding: 0.875rem 1.25rem;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .setting-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0.875rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .setting-row:last-child { border-bottom: none; }
+
+    .setting-label {
+      font-size: 15px;
+      color: var(--text);
+      flex: 1;
+    }
+
+    .setting-val {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--orange);
+      min-width: 44px;
+      text-align: right;
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 120px;
+      height: 4px;
+      background: var(--surface-2);
+      border-radius: 2px;
+      outline: none;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--orange);
+      cursor: pointer;
+      border: 3px solid var(--surface);
+      box-shadow: 0 0 0 1px var(--orange);
+    }
+
+    .exercise-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 0.875rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .exercise-item:last-child { border-bottom: none; }
+
+    .ex-num {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--orange-bg);
+      color: var(--orange);
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .ex-info { flex: 1; }
+
+    .ex-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+
+    .ex-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .ex-count {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--orange);
+      white-space: nowrap;
+      margin-top: 2px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+
+    .stat-cell {
+      padding: 1rem 1.25rem;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .stat-cell:nth-child(2n) { border-right: none; }
+    .stat-cell:nth-child(3), .stat-cell:nth-child(4) { border-bottom: none; }
+
+    .stat-num {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--orange);
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .notif-btn {
+      display: block;
+      width: calc(100% - 3rem);
+      margin: 0 1.5rem 1.25rem;
+      background: var(--orange-bg);
+      color: var(--orange);
+      border: 1px solid var(--orange-light);
+      border-radius: var(--radius);
+      padding: 14px;
+      font-size: 14px;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .notif-btn:active { opacity: 0.8; }
+
+    /* Alert overlay */
+    .alert-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      z-index: 200;
+      align-items: flex-end;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .alert-overlay.show { display: flex; }
+
+    .alert-sheet {
+      background: var(--surface);
+      border-radius: 24px 24px 0 0;
+      padding: 2rem 1.5rem 2.5rem;
+      width: 100%;
+      text-align: center;
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .alert-emoji { font-size: 48px; margin-bottom: 12px; }
+
+    .alert-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .alert-sub {
+      font-size: 15px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 1.5rem;
+    }
+
+    .alert-exercises {
+      background: var(--surface-2);
+      border-radius: var(--radius-sm);
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      text-align: left;
+    }
+
+    .alert-ex {
+      font-size: 14px;
+      color: var(--text);
+      padding: 4px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .alert-ex::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--orange);
+      flex-shrink: 0;
+    }
+
+    .btn-dismiss {
+      width: 100%;
+      background: var(--orange);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn-dismiss:active { opacity: 0.85; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="app-name">Move Timer</div>
+    <div class="streak">Bugün <span id="breakCount">0</span> mola</div>
+  </header>
+
+  <div class="timer-section">
+    <div class="ring-wrap">
+      <svg width="220" height="220" viewBox="0 0 220 220">
+        <circle cx="110" cy="110" r="100" fill="none" stroke="var(--surface-2)" stroke-width="8"/>
+        <circle id="progressRing" cx="110" cy="110" r="100" fill="none" stroke="var(--orange)" stroke-width="8"
+          stroke-dasharray="628" stroke-dashoffset="0" stroke-linecap="round"/>
+      </svg>
+      <div class="ring-inner">
+        <div class="timer-num" id="timerNum">45:00</div>
+        <div class="timer-mode" id="timerMode">çalışma</div>
+      </div>
+    </div>
+
+    <div class="mode-badge work" id="modeBadge">Çalış</div>
+
+    <div class="controls">
+      <button class="btn btn-secondary" onclick="resetTimer()">Sıfırla</button>
+      <button class="btn btn-primary" id="startBtn" onclick="toggleTimer()">Başlat</button>
+    </div>
+  </div>
+
+  <button class="notif-btn" id="notifBtn" onclick="requestNotif()">🔔 Bildirimlere izin ver</button>
+
+  <div class="section">
+    <div class="section-header">Ayarlar</div>
+    <div class="setting-row">
+      <div class="setting-label">Çalışma süresi</div>
+      <input type="range" id="workSlider" min="10" max="60" value="45" step="5" oninput="updateWork(this.value)"/>
+      <div class="setting-val" id="workVal">45 dk</div>
+    </div>
+    <div class="setting-row">
+      <div class="setting-label">Mola süresi</div>
+      <input type="range" id="breakSlider" min="2" max="10" value="4" step="1" oninput="updateBreak(this.value)"/>
+      <div class="setting-val" id="breakVal">4 dk</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">Mola hareketleri</div>
+    <div class="exercise-item">
+      <div class="ex-num">1</div>
+      <div class="ex-info">
+        <div class="ex-name">Squat</div>
+        <div class="ex-desc">Omuz genişliğinde aç, yavaş in yavaş çık</div>
+        <div class="ex-count">10–15 tekrar</div>
+      </div>
+    </div>
+    <div class="exercise-item">
+      <div class="ex-num">2</div>
+      <div class="ex-info">
+        <div class="ex-name">Hip hinge</div>
+        <div class="ex-desc">Hafif diz bükümüyle öne eğil, sırt düz</div>
+        <div class="ex-count">10 tekrar</div>
+      </div>
+    </div>
+    <div class="exercise-item">
+      <div class="ex-num">3</div>
+      <div class="ex-info">
+        <div class="ex-name">Glute bridge</div>
+        <div class="ex-desc">Sırt üstü uzan, kalçayı yukarı it, 2 sn tut</div>
+        <div class="ex-count">10–12 tekrar</div>
+      </div>
+    </div>
+    <div class="exercise-item">
+      <div class="ex-num">4</div>
+      <div class="ex-info">
+        <div class="ex-name">Yürüyüş</div>
+        <div class="ex-desc">Oda içinde 3–4 dakika yürü, garantili sıfırlar</div>
+        <div class="ex-count">3–4 dakika</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">Bugünkü istatistikler</div>
+    <div class="stats-grid">
+      <div class="stat-cell">
+        <div class="stat-num" id="statBreaks">0</div>
+        <div class="stat-label">Tamamlanan mola</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-num" id="statExercises">0</div>
+        <div class="stat-label">Toplam hareket seti</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-num" id="statWork">0 dk</div>
+        <div class="stat-label">Çalışma süresi</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-num" id="statSquats">0</div>
+        <div class="stat-label">Tahmini squat</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="alert-overlay" id="alertOverlay">
+  <div class="alert-sheet">
+    <div class="alert-emoji">🏃</div>
+    <div class="alert-title">Hareket zamanı!</div>
+    <div class="alert-sub">Belini koru, şimdi kalk ve şunları yap:</div>
+    <div class="alert-exercises">
+      <div class="alert-ex">Squat — 10–15 tekrar</div>
+      <div class="alert-ex">Hip hinge — 10 tekrar</div>
+      <div class="alert-ex">Glute bridge — 10–12 tekrar</div>
+      <div class="alert-ex">Yürüyüş — 3–4 dakika</div>
+    </div>
+    <button class="btn-dismiss" onclick="dismissAlert()">Tamam, kalkıyorum! 💪</button>
+  </div>
+</div>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+let workSec = 45 * 60;
+let breakSec = 4 * 60;
+let totalSec = workSec;
+let remaining = workSec;
+let isRunning = false;
+let isBreak = false;
+let ticker = null;
+let breaksDone = 0;
+let workDone = 0;
+const circ = 2 * Math.PI * 100;
+
+const timerNum = document.getElementById('timerNum');
+const timerMode = document.getElementById('timerMode');
+const modeBadge = document.getElementById('modeBadge');
+const startBtn = document.getElementById('startBtn');
+const progressRing = document.getElementById('progressRing');
+const breakCount = document.getElementById('breakCount');
+
+function fmt(s) {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return m + ':' + String(sec).padStart(2, '0');
+}
+
+function updateDisplay() {
+  timerNum.textContent = fmt(remaining);
+  const progress = 1 - (remaining / totalSec);
+  progressRing.style.strokeDashoffset = circ * (1 - progress);
+  progressRing.style.stroke = isBreak ? '#16A34A' : '#EA580C';
+}
+
+function updateStats() {
+  document.getElementById('statBreaks').textContent = breaksDone;
+  document.getElementById('statExercises').textContent = breaksDone * 3;
+  document.getElementById('statWork').textContent = Math.round(workDone / 60) + ' dk';
+  document.getElementById('statSquats').textContent = breaksDone * 12;
+}
+
+function toggleTimer() {
+  if (isRunning) {
+    clearInterval(ticker);
+    isRunning = false;
+    startBtn.textContent = 'Devam';
+  } else {
+    isRunning = true;
+    startBtn.textContent = 'Durdur';
+    ticker = setInterval(tick, 1000);
+  }
+}
+
+function tick() {
+  remaining--;
+  if (!isBreak) workDone++;
+  updateDisplay();
+  updateStats();
+  if (remaining <= 0) {
+    if (!isBreak) {
+      breaksDone++;
+      breakCount.textContent = breaksDone;
+      showAlert();
+      isBreak = true;
+      totalSec = breakSec;
+      remaining = breakSec;
+      timerMode.textContent = 'mola';
+      modeBadge.textContent = 'Hareket!';
+      modeBadge.className = 'mode-badge move';
+      sendNotification('Hareket zamanı! 🏃', 'Squat → Hip hinge → Glute bridge → Yürüyüş');
+    } else {
+      isBreak = false;
+      totalSec = workSec;
+      remaining = workSec;
+      timerMode.textContent = 'çalışma';
+      modeBadge.textContent = 'Çalış';
+      modeBadge.className = 'mode-badge work';
+      sendNotification('Mola bitti ✅', 'Tekrar çalışmaya başla!');
+    }
+    updateDisplay();
+    updateStats();
+  }
+}
+
+function resetTimer() {
+  clearInterval(ticker);
+  isRunning = false;
+  isBreak = false;
+  remaining = workSec;
+  totalSec = workSec;
+  startBtn.textContent = 'Başlat';
+  timerMode.textContent = 'çalışma';
+  modeBadge.textContent = 'Çalış';
+  modeBadge.className = 'mode-badge work';
+  updateDisplay();
+}
+
+function updateWork(v) {
+  document.getElementById('workVal').textContent = v + ' dk';
+  workSec = v * 60;
+  if (!isRunning && !isBreak) { remaining = workSec; totalSec = workSec; updateDisplay(); }
+}
+
+function updateBreak(v) {
+  document.getElementById('breakVal').textContent = v + ' dk';
+  breakSec = v * 60;
+}
+
+function showAlert() {
+  document.getElementById('alertOverlay').classList.add('show');
+  try {
+    const ctx = new AudioContext();
+    [523, 659, 784].forEach((f, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = f;
+      gain.gain.setValueAtTime(0.3, ctx.currentTime + i * 0.15);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.15 + 0.3);
+      osc.start(ctx.currentTime + i * 0.15);
+      osc.stop(ctx.currentTime + i * 0.15 + 0.3);
+    });
+  } catch(e) {}
+}
+
+function dismissAlert() {
+  document.getElementById('alertOverlay').classList.remove('show');
+}
+
+function requestNotif() {
+  if (!('Notification' in window)) {
+    alert('Bu tarayıcı bildirimleri desteklemiyor.');
+    return;
+  }
+  Notification.requestPermission().then(p => {
+    if (p === 'granted') {
+      document.getElementById('notifBtn').textContent = '✅ Bildirimler açık';
+      document.getElementById('notifBtn').style.opacity = '0.5';
+      document.getElementById('notifBtn').style.cursor = 'default';
+    }
+  });
+}
+
+function sendNotification(title, body) {
+  if (Notification.permission === 'granted') {
+    new Notification(title, { body, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png' });
+  }
+}
+
+if (Notification.permission === 'granted') {
+  document.getElementById('notifBtn').textContent = '✅ Bildirimler açık';
+  document.getElementById('notifBtn').style.opacity = '0.5';
+}
+
+updateDisplay();
+</script>
+</body>
+</html>
